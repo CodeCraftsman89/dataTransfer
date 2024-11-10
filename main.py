@@ -5,7 +5,7 @@ soc_recv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 soc_send.bind(("127.0.0.1", 55555))
 soc_recv.bind(("127.0.0.1", 54321))
 
-user_message = input("Введите сообщение: ")
+
 i = 1
 while True:
     user_message = input("Введите сообщение: ")
