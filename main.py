@@ -8,6 +8,7 @@ soc_recv.bind(("127.0.0.1", 54321))
 user_message = input("Введите сообщение: ")
 i = 1
 while True:
+    user_message = input("Введите сообщение: ")
     soc_send.sendto(bytearray(f"№{i} {user_message}!!!,", "utf-8"), ("127.0.0.1", 54321))
     time.sleep(1)
 
