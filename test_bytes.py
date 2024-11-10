@@ -1,0 +1,12 @@
+b = b"\x31\x32\x33\x76\xAA\xFE\x33\x76\x77"
+print(b)
+print(b.hex())
+print(b.count(b"\x33"))
+print(b.count(b"3"))
+print(b.index(b"\x76"))
+print(b.find(b"\x76"))
+print(b.rfind(b"\x76"))
+b_new = b.replace(b"\x33", b"\x38")
+print(b_new)
+print(b_new.hex())
+print(b_new.split(b"\x38"))
