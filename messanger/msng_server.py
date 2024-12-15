@@ -19,7 +19,7 @@ def connection(client: socket.socket, client_addr: tuple, all_clients: dict):
 
         elif head[0] == CONSTANTS[1]:
             nicks = "  ".join([k for k in all_clients])
-            msg_get_all = CONSTANTS[1].encode('utf-8') + SEP_FIELDS +SEP_FIELDS + SEP_HEAD + nicks.encode('utf-8')
+            msg_get_all = CONSTANTS[1].encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + nicks.encode('utf-8')
             msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
             client.send(msg_get_all)
 
@@ -48,5 +48,5 @@ if __name__ == "__main__":
         sock_cli, addr_cli = s.accept()
         print(f"Connected to {(sock_cli, addr_cli)}")
 
-        t = Thread(target=connection, args=(connect[-1][0],), daemon=True)
+        t = Thread(target=connection, args=(sock_cli, addr_cli, connect), daemon=True)
         t.start()

@@ -3,12 +3,12 @@ from threading import Thread
 
 HOST = "127.0.0.1"  # The server's hostname or IP address
 PORT = 35533  # The port used by the server
-NICK = "ABC"
+NICK = "||ePBb|Y"
 SEP_HEAD = b'/x00'
 SEP_FIELDS = b'/x01'
 CONSTANTS = ["CONN_NICK", "GET_NICKS", "SEND", "SEND_ALL", "DISCONN"]
 
-def reciver(sock: socket.socket, close: bool) -> None:
+def receiver(sock: socket.socket, close: bool) -> None:
     while True:
         recv_msg = sock.recv(2)
         recv_msng = sock.recv(int.from_bytes(recv_msg))
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     s.connect((HOST, PORT))
     print("Connect")
     close_sock = False
-    t = Thread(target=reciver, args=(s, close_sock), daemon=True)
+    t = Thread(target=receiver, args=(s, close_sock), daemon=True)
     t.start()
     msg_nick = CONSTANTS[0].encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS +SEP_HEAD
     msg_nick = len(msg_nick).to_bytes(2) + msg_nick
