@@ -8,12 +8,27 @@ SEP_HEAD = b'/x00'
 SEP_FIELDS = b'/x01'
 CONSTANTS = ["CONN_NICK", "GET_NICKS", "SEND", "SEND_ALL", "DISCONN"]
 
+def send_connect(sock: socket.socket) -> None:
+    send_msg = CONSTANTS[0].encode('utf-8') + SEP_FIELDS + NICK.encode('utf-8') + SEP_FIELDS + SEP_HEAD
+    send_msg = len(send_msg).to_bytes(2) + send_msg
+    sock.send(send_msg)
+
+def send_get_nicks(sock: socket.socket) -> None:
+    send_msg = CONSTANTS[1].encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD
+    send_msg = len(send_msg).to_bytes(2) + send_msg
+    sock.send(send_msg)
+
+def send_to_all_nicks(sock: socket.socket, text: str) -> None:
+    send_msg = CONSTANTS[3].encode('utf-8') + SEP_FIELDS + NICK.encode('utf-8') + SEP_FIELDS + SEP_HEAD + text.encode('utf-8')
+    send_msg = len(send_msg).to_bytes(2) + send_msg
+    sock.send(send_msg)
+
 def receiver(sock: socket.socket, close: bool) -> None:
     while True:
         recv_msg = sock.recv(2)
-        recv_msng = sock.recv(int.from_bytes(recv_msg))
+        recv_msg = sock.recv(int.from_bytes(recv_msg))
         full_pack = recv_msg.split(SEP_HEAD)
-        head = [faild.decode('utf-8') for faild in full_pack[0].split(SEP_FIELDS)]
+        head = [field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
         if head[0] == CONSTANTS[1]:
             if len(full_pack) > 1:
                 print(f"Users: {full_pack[1].decode('utf-8')}")
