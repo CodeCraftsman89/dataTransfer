@@ -1,5 +1,6 @@
 import socket
 from threading import Thread
+from time import sleep
 
 HOST = "127.0.0.1"  # The server's hostname or IP address
 PORT = 35533  # The port used by the server
@@ -8,25 +9,34 @@ SEP_HEAD = b'/x00'
 SEP_FIELDS = b'/x01'
 CONSTANTS = ["CONN_NICK", "GET_NICKS", "SEND", "SEND_ALL", "DISCONN"]
 
-def send_connect(sock: socket.socket) -> None:
+CONNECT_TRY_SHORT = 3
+CONNECT_TRY_SHORT_SLEEP = 1
+CONNECT_TRY_LONG = 5
+CONNECT_TRY_LONG_SLEEP = 30
+
+def send_connect(sock: socket.socket) -> bool:
     send_msg = CONSTANTS[0].encode('utf-8') + SEP_FIELDS + NICK.encode('utf-8') + SEP_FIELDS + SEP_HEAD
-    send_msg = len(send_msg).to_bytes(2) + send_msg
-    sock.send(send_msg)
+    send_msg = len(send_msg).to_bytes(2, byteorder='big') + send_msg
+    return send_message(sock, send_msg)
 
-def send_get_nicks(sock: socket.socket) -> None:
+def send_get_nicks(sock: socket.socket) -> bool:
     send_msg = CONSTANTS[1].encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD
-    send_msg = len(send_msg).to_bytes(2) + send_msg
-    sock.send(send_msg)
+    send_msg = len(send_msg).to_bytes(2, byteorder='big') + send_msg
+    return send_message(sock, send_msg)
 
-def send_to_all_nicks(sock: socket.socket, text: str) -> None:
+def send_to_all_nicks(sock: socket.socket, text: str) -> bool:
     send_msg = CONSTANTS[3].encode('utf-8') + SEP_FIELDS + NICK.encode('utf-8') + SEP_FIELDS + SEP_HEAD + text.encode('utf-8')
-    send_msg = len(send_msg).to_bytes(2) + send_msg
-    sock.send(send_msg)
+    send_msg = len(send_msg).to_bytes(2, byteorder='big') + send_msg
+    return send_message(sock, send_msg)
 
 def receiver(sock: socket.socket, close: bool) -> None:
     while True:
-        recv_msg = sock.recv(2)
-        recv_msg = sock.recv(int.from_bytes(recv_msg))
+        try:
+            recv_msg = sock.recv(2)
+            recv_msg = sock.recv(int.from_bytes(recv_msg))
+        except ConnectionResetError:
+            print(f"Disconnect {sock}")
+            break
         full_pack = recv_msg.split(SEP_HEAD)
         head = [field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
         if head[0] == CONSTANTS[1]:
@@ -35,29 +45,58 @@ def receiver(sock: socket.socket, close: bool) -> None:
         elif head[0] == CONSTANTS[3]:
             if len(full_pack) > 1:
                 if full_pack[1].decode('utf-8').lower() == "end":
-                    close= True
+                    print("Disconnection")
                     break
                 else:
                     print(f"Message: {full_pack[1].decode('utf-8')}")
 
+def send_message(sock: socket.socket, mesg: bytes) -> bool:
+    try:
+        sock.send(mesg)
+    except ConnectionResetError:
+        print(f"Disconnect {sock}")
+        return False
+    return True
 
 if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print(f"Connect to {HOST}:{PORT}")
-    s.connect((HOST, PORT))
-    print("Connect")
-    close_sock = False
-    t = Thread(target=receiver, args=(s, close_sock), daemon=True)
-    t.start()
-    msg_nick = CONSTANTS[0].encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS +SEP_HEAD
-    msg_nick = len(msg_nick).to_bytes(2) + msg_nick
-    s.send(msg_nick)
-    while not close_sock:
-        msg_get_all = CONSTANTS[1].encode('utf-8') + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD
-        msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
-        s.send(msg_get_all)
-        msg = input(">>")
-        msg_all = CONSTANTS[3].encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") +SEP_FIELDS + SEP_HEAD + msg.encode("utf-8")
-        msg_all = len(msg_all).to_bytes(2) + msg_all
-        s.send(msg_all)
+    connected = False
+    connect_try = 0
+    connect_try_error = 0
+    while not connected:
+        try:
+            s.connect((HOST, PORT))
+            connected = True
+            break
+        except ConnectionRefusedError:
+            print("Do not connected.")
+            connect_try += 1
+            if connect_try == CONNECT_TRY_SHORT:
+                print(f"{CONNECT_TRY_SHORT}")
+                connect_try_error += 1
+                connect_try = 0
+                if connect_try_error == CONNECT_TRY_LONG:
+                    print(f"Using {CONNECT_TRY_SHORT * CONNECT_TRY_LONG} try to connect.")
+                    print("End program")
+                    break
+                else:
+                    print(f"Try {CONNECT_TRY_LONG_SLEEP}")
+                    sleep(CONNECT_TRY_LONG_SLEEP)
+            else:
+                print(f"Stop {CONNECT_TRY_SHORT_SLEEP}")
+                sleep(CONNECT_TRY_SHORT_SLEEP)
+    if connected:
+        print("Connected")
+        close_sock = False
+        t = Thread(target=receiver, args=(s, close_sock), daemon=True)
+        t.start()
+        if send_connect(s):
+            while True:
+                if not send_get_nicks(s):
+                    break
+                msg = input("Enter message: ")
+                if not send_to_all_nicks(s, msg):
+                    break
+
     s.close()
