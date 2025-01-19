@@ -1,5 +1,5 @@
 import socket
-from threading import Thread
+from threading import Thread, Lock
 
 SERVER_IP = "0.0.0.0"
 SERVER_PORT = 35533
@@ -39,7 +39,7 @@ def send_disconnect(sock: socket) -> bool:
     msg_end = len(msg_end).to_bytes(2) + msg_end
     return send_message(sock, msg_end)
 
-def  client_conversations(client: socket.socket, client_addr: tuple, all_clients: dict) -> None:
+def  client_conversations(client: socket.socket, client_addr: tuple, all_clients: dict, lock: Lock) -> None:
     while True:
         disconnect = False
         try:
@@ -68,11 +68,14 @@ def  client_conversations(client: socket.socket, client_addr: tuple, all_clients
         if disconnect:
             print(f"Соединение {client} разорвано")
             client.close()
+            with lock:
+                all_clients.pop(head[1])
             break
 
 if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((SERVER_IP, SERVER_PORT))
+    lock_threads = Lock()
 
     while True:
         print(f"Ожидаем подключения к {SERVER_IP}:{SERVER_PORT}...")
@@ -81,5 +84,5 @@ if __name__ == "__main__":
         sock_cli, addr_cli = s.accept()
         print(f"Получено подключение {addr_cli}")
 
-        t = Thread(target=client_conversations, args=(sock_cli, addr_cli, connect), daemon=True)
+        t = Thread(target=client_conversations, args=(sock_cli, addr_cli, connect, lock_threads), daemon=True)
         t.start()
