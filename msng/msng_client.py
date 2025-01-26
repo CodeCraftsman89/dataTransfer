@@ -2,7 +2,6 @@ import socket
 from base64 import encode
 from threading import Thread
 from time import sleep
-
 from messanger.msng_client import CONNECT_TRY_SHORT
 
 SERVER_IP = "127.0.0.1"
