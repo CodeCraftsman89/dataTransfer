@@ -39,11 +39,13 @@ def send_get_nicks(sock: socket.socket) -> bool:
     send_msg = len(send_msg).to_bytes(2) + send_msg
     return send_message(sock, send_msg)
 
-def send_to_all_nicks(sock: socket.socket, text: str) -> bool:
-    send_msg = (SEND_ALL_NICKS.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS +
-                SEP_HEAD + text.encode("utf-8"))
-    send_msg = len(send_msg).to_bytes(2) + send_msg
-    return send_message(sock, send_msg)
+def send_to_all_nicks(clients_dict: dict) -> bool:
+    nicks = "  ".join([k for k in clients_dict])
+    msg_get_all = GET_ALL.encode("utf-8") + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + nicks.encode("utf-8")
+    msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
+    for cl in clients_dict.keys():
+        clients_dict[cl][2].put(msg_get_all)
+    return True
 
 def send_disconnect(sock: socket.socket) -> bool:
     send_msg = DISCONNECT.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD

@@ -35,8 +35,6 @@ def send_to_all_nicks(client_dict: dict, nick: str, msg: bytes) -> bool:
     msg_all = SEND_ALL_NICKS.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + msg
     msg_all = len(msg_all).to_bytes(2) + msg_all
     for cl in client_dict.keys():
-        if cl == nick:
-            continue
         client_dict[cl][2].put(msg_all)
     return True
 
@@ -67,6 +65,8 @@ def  client_conversations(client: socket.socket, client_addr: tuple, all_clients
         head =[field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
         if head[0] == CONNECT:
             all_clients[head[1]] = (client, client_addr, queue)
+            if not send_to_all_nicks(all_clients):
+                break
         elif head[0] == GET_ALL:
             if not send_nicks(client, all_clients):
                 break
