@@ -2,7 +2,7 @@ import socket
 from base64 import encode
 from threading import Thread
 from time import sleep
-from messanger.msng_client import CONNECT_TRY_SHORT
+
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 35533
@@ -30,7 +30,7 @@ def send_message(sock: socket.socket, mesg: bytes) -> bool:
     return True
 
 def send_connect(sock: socket.socket) -> bool:
-    send_msg = GET_ALL.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD
+    send_msg = CONNECT.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD
     send_msg = len(send_msg).to_bytes(2) + send_msg
     return send_message(sock, send_msg)
 
@@ -65,7 +65,7 @@ def receiver (sock: socket.socket) -> None:
                 print(f"Получены все ники: {full_pack[1].decode('utf-8')}")
         elif head[0] == SEND_ALL_NICKS:
             if len(full_pack) > 1:
-                print(f"Сообщение для всех {full_pack[1].decode('utf-8')}")
+                print(f"От [{head[1]}] cообщение для всех: {full_pack[1].decode('utf-8')}")
         elif head[0] == DISCONNECT:
             print(f"Соединение разорвано")
             break
@@ -103,14 +103,13 @@ if __name__ == "__main__":
         t = Thread(target=receiver, args=(s,), daemon=True)
         t.start()
         if send_connect(s):
-            while True:
-                if not send_get_nicks(s):
-                    break
-                msg = input("Введите сообщение: ")
-                if msg == "exit":
-                    send_disconnect(s)
-                    t.join()
-                    break
-                if not send_to_all_nicks(s, msg):
-                    break
-    s.close()
+                if send_get_nicks(s):
+                    while True:
+                        msg = input("Введите сообщение: ")
+                        if msg == "exit":
+                            send_disconnect(s)
+                            t.join()
+                            break
+                        if not send_to_all_nicks(s, msg):
+                            break
+                s.close()
