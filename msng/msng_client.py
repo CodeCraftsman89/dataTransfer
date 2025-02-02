@@ -39,13 +39,15 @@ def send_get_nicks(sock: socket.socket) -> bool:
     send_msg = len(send_msg).to_bytes(2) + send_msg
     return send_message(sock, send_msg)
 
-def send_to_all_nicks(clients_dict: dict) -> bool:
-    nicks = "  ".join([k for k in clients_dict])
-    msg_get_all = GET_ALL.encode("utf-8") + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + nicks.encode("utf-8")
-    msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
-    for cl in clients_dict.keys():
-        clients_dict[cl][2].put(msg_get_all)
-    return True
+def send_to_nick(sock: socket.socket, nick: str, text: str) -> bool:
+        send_msg = (SEND_NICK.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + nick.encode("utf-8") + SEP_HEAD + text.encode("utf-8"))
+        send_msg = len(send_msg).to_bytes(2) + send_msg
+        return send_message(sock, send_msg)
+
+def send_to_all_nicks(sock: socket.socket, text: str) -> bool:
+    send_msg = (SEND_ALL_NICKS.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD + text.encode("utf-8"))
+    send_msg = len(send_msg).to_bytes(2) + send_msg
+    return send_message(sock, send_msg)
 
 def send_disconnect(sock: socket.socket) -> bool:
     send_msg = DISCONNECT.encode("utf-8") + SEP_FIELDS + NICK.encode("utf-8") + SEP_FIELDS + SEP_HEAD
@@ -68,6 +70,9 @@ def receiver (sock: socket.socket) -> None:
         elif head[0] == SEND_ALL_NICKS:
             if len(full_pack) > 1:
                 print(f"От [{head[1]}] cообщение для всех: {full_pack[1].decode('utf-8')}")
+        elif head[0] == SEND_NICK:
+            if len(full_pack) > 1:
+                print(f"От [{head[1]}] сообщение: {full_pack[1].decode('utf-8')}")
         elif head[0] == DISCONNECT:
             print(f"Соединение разорвано")
             break
@@ -105,13 +110,17 @@ if __name__ == "__main__":
         t = Thread(target=receiver, args=(s,), daemon=True)
         t.start()
         if send_connect(s):
-                if send_get_nicks(s):
-                    while True:
-                        msg = input("Введите сообщение: ")
-                        if msg == "exit":
-                            send_disconnect(s)
-                            t.join()
-                            break
-                        if not send_to_all_nicks(s, msg):
-                            break
-                s.close()
+            while True:
+                to = input("Введите ник: ")
+                msg = input("Введите сообщение: ")
+                if msg.lower() == "exit" or to.lower() == "exit":
+                    send_disconnect(s)
+                    t.join()
+                    break
+                if not to:
+                    if not send_to_all_nicks(s, msg):
+                        break
+                else:
+                    if not send_to_nick(s, to, msg):
+                        break
+    s.close()

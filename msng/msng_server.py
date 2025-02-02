@@ -31,12 +31,21 @@ def send_nicks(sock: socket, clients: dict) -> bool:
     msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
     return send_message(sock, msg_get_all)
 
+def send_nicks_to_all(client_dict: dict) -> bool:
+    nicks = "  ".join([k for k in client_dict])
+    msg_get_all = GET_ALL.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + nicks.encode('utf-8')
+    msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
+    for cl in client_dict.keys():
+        client_dict[cl][2].put(msg_get_all)
+    return True
+
 def send_to_all_nicks(client_dict: dict, nick: str, msg: bytes) -> bool:
-    msg_all = SEND_ALL_NICKS.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + msg
+    msg_all = SEND_ALL_NICKS.encode('utf-8') + SEP_FIELDS + nick.encode('utf-8') + SEP_FIELDS + SEP_HEAD + msg
     msg_all = len(msg_all).to_bytes(2) + msg_all
     for cl in client_dict.keys():
+        if cl == nick:
+            continue
         client_dict[cl][2].put(msg_all)
-    return True
 
 def send_disconnect(sock: socket) -> bool:
     msg_end = DISCONNECT.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD
@@ -65,17 +74,19 @@ def  client_conversations(client: socket.socket, client_addr: tuple, all_clients
         head =[field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
         if head[0] == CONNECT:
             all_clients[head[1]] = (client, client_addr, queue)
-            if not send_to_all_nicks(all_clients):
+            if not send_nicks_to_all(all_clients):
                 break
         elif head[0] == GET_ALL:
             if not send_nicks(client, all_clients):
                 break
         elif head[0] == SEND_ALL_NICKS:
             if len(full_pack) > 1:
-                if not send_to_all_nicks(all_clients, head[1], full_pack[1]):
+                if not send_nicks_to_all(all_clients, head[1], full_pack[1]):
                     break
         elif head[0] == DISCONNECT:
             if not send_disconnect(client):
+                break
+            if not send_nicks_to_all(all_clients):
                 break
             disconnect = True
         if disconnect:
