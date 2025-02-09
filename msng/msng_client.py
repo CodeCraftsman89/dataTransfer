@@ -1,10 +1,9 @@
 import socket
-from base64 import encode
 from threading import Thread
 from time import sleep
 
 
-SERVER_IP = "127.0.0.1"
+SERVER_IP = "25.38.241.107"
 SERVER_PORT = 35533
 NICK = "||ePBb|Y"
 SEP_HEAD = b'/x00'
