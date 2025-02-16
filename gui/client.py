@@ -83,11 +83,13 @@ class Conversation:
 
     def sender(self):
         while True:
-            if not self.q_send.empty():
-                msg = self.q_send.get()
+            if not self.q_send.empty(): # проверка на пустую очередь
+                msg = self.q_send.get() # получаем данные из очереди
                 send_msg = msg.encode("utf-8")
-                send_msg = len(send_msg).to_bytes(2) + send_msg
-                send_message(self.s, send_msg)
+                self.q_send.task_done() # устанавливаем завершение задачи
+                break
+            else:
+                print("Очередь пуста")
 
     def receiver(self):
         pass
