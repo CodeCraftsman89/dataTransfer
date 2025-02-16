@@ -84,12 +84,28 @@ class Conversation:
     def sender(self):
         while True:
             if not self.q_send.empty(): # проверка на пустую очередь
-                msg = self.q_send.get() # получаем данные из очереди
-                send_msg = msg.encode("utf-8")
+                send_msg = self.q_send.get() # получаем данные из очереди
                 self.q_send.task_done() # устанавливаем завершение задачи
-                break
+
             else:
-                print("Очередь пуста")
+                continue
+
+            types = Message.basic_types()
+
+            if send_msg.type_msg == types[1]: # если это сообщение
+                if not send_to_all_nicks(self.s, self.nick, send_msg.message):
+                    break
+            elif send_msg.type_msg == types[2]:
+                if not send_to_nick(self.s, self.nick, send_msg.nick_to, send_msg.message):
+                    break
+            elif send_msg.type_msg == types[3]:
+                if not send_disconnect(self.s, self.nick):
+                    break
+                break
+
+        self.connected = False
+
+
 
     def receiver(self):
         pass
