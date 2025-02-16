@@ -2,6 +2,7 @@ import socket
 from queue import Queue
 from threading import Thread
 from time import sleep
+from parameters import Message
 
 
 SERVER_IP = "25.38.241.107"
@@ -81,7 +82,12 @@ class Conversation:
                 print("Не удалось подключиться")
 
     def sender(self):
-        pass
+        while True:
+            if not self.q_send.empty():
+                msg = self.q_send.get()
+                send_msg = msg.encode("utf-8")
+                send_msg = len(send_msg).to_bytes(2) + send_msg
+                send_message(self.s, send_msg)
 
     def receiver(self):
         pass
