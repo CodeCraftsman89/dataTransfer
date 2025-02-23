@@ -22,7 +22,7 @@ CONNECT_TRY_LONG = 5
 CONNECT_TRY_LONG_SLEEP = 30
 
 class Conversation:
-    def __init__(self, server_ip: int , server_port: int, nick: str, q_send: Queue, q_recv: Queue):
+    def __init__(self, server_ip: str , server_port: int, nick: str, q_send: Queue, q_recv: Queue):
         self.server_ip = server_ip
         self.server_port = server_port
         self.nick = nick
@@ -105,6 +105,40 @@ class Conversation:
 
         self.connected = False
 
+    def receiver(self):
+        while True:
+            try:
+                recv_msg = self.s.recv(2)
+                recv_msg = self.s.recv(int.from_bytes(recv_msg))
+            except ConnectionResetError:
+                print(f"Соединение {self.s} разорвано")
+                break
+            full_pack = recv_msg.split(SEP_HEAD)
+            head = [field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
+
+            types = Message.basic_types()
+
+            if head[0] == GET_ALL:
+                if len(full_pack) > 1:
+                    msg_send = Message(types[0], message=full_pack[1].decode('utf-8'))
+                    self.q_recv.put(msg_send)
+            elif head[0] == SEND_ALL_NICKS:
+                if len(full_pack) > 1:
+                    msg_send = Message(types[0], nick_from=head[1], message=full_pack[1].decode('utf-8'))
+                    self.q_recv.put(msg_send)
+            elif head[0] == SEND_NICK:
+                if len(full_pack) > 1:
+                    msg_send = Message(types[0], nick_from=head[1], message=full_pack[1].decode('utf-8'))
+                    self.q_recv.put(msg_send)
+            elif head[0] == DISCONNECT:
+                msg_send = Message(types[3])
+                self.q_send.put(msg_send)
+                break
+
+        self.connected = False
+
+
+
 
 
     def receiver(self):
@@ -169,53 +203,37 @@ def receiver (sock: socket.socket) -> None:
             print(f"Соединение разорвано")
             break
 
-if __name__ == "__main__":
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print(f"Соединение с {SERVER_IP}:{SERVER_PORT}")
-    connected = False
-    connect_try = 0
-    connect_try_to_error = 0
-    while not connected:
-        try:
-            s.connect((SERVER_IP, SERVER_PORT))
-            connected = True
-            break
-        except ConnectionRefusedError:
-            print(f"Нет соединения с {SERVER_IP}:{SERVER_PORT}")
-            connect_try += 1
-        if connect_try == CONNECT_TRY_SHORT:
-            print(f"Не удалось подключиться через {CONNECT_TRY_SHORT} попыток")
-            connect_try_to_error += 1
-            connect_try = 0
-            if connect_try_to_error == CONNECT_TRY_LONG:
-                print(f"Не удалось подключиться через {CONNECT_TRY_LONG} попыток")
-                print("Программа завершена")
-                break
-            else:
-                print(f"Попытка подключения через {CONNECT_TRY_LONG_SLEEP} секунд")
-                sleep(CONNECT_TRY_LONG_SLEEP)
+def console_recv(queue: Queue) -> None:
+    while True:
+        if not queue.empty():
+            recv_msg = queue.get()
+            queue.task_done()
         else:
-            print(f"Попытка подключения через {CONNECT_TRY_SHORT_SLEEP} секунд")
-            sleep(CONNECT_TRY_SHORT_SLEEP)
-    if connected:
-        print(f"Соединение с {SERVER_IP}:{SERVER_PORT} установлено")
-        t = Thread(target=receiver, args=(s,), daemon=True)
-        t.start()
-        if send_connect(s):
-            while True:
-                to = input("Введите ник: ")
-                msg = input("Введите сообщение: ")
-                if msg.lower() == "exit" or to.lower() == "exit":
-                    send_disconnect(s)
-                    t.join()
-                    break
-                if not to:
-                    if not send_to_all_nicks(s, msg):
-                        break
-                else:
-                    if not send_to_nick(s, to, msg):
-                        break
-    s.close()
+            continue
+
+        types  = Message.basic_types()
+        if recv_msg.type_msg == types[0]:
+            print("Подключенные пользователи: " + recv_msg.message)
+        elif recv_msg.type_msg == types[1]:
+            print(f"От [{recv_msg.nick_from}] сообщение для всех: {recv_msg.message}")
+        elif recv_msg.type_msg == types[2]:
+            print(f"От [{recv_msg.nick_from}] сообщение: {recv_msg.message}")
+        elif recv_msg.type_msg == types[3]:
+            print("Соединение разорвано")
+            break
 
 if __name__ == "__main__":
-    pass
+    q_send = Queue()
+    q_recv = Queue()
+    messanger = Conversation(SERVER_IP, SERVER_PORT, NICK, q_send, q_recv)
+    t_resiver = Thread(target=receiver, args=(q_recv,), daemon=True)
+    t_resiver.start()
+    types = Message.basic_types()
+    while not messanger.connected:
+        pass
+    while True:
+        if not messanger.connected:
+            print("Ожидание подключения...")
+            continue
+        to = input("Введите имя: ")
+        msg input("Cообщение: ")
