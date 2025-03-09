@@ -7,7 +7,7 @@ from parameters import Message
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 35533
-NICK = "|fweffIOK"
+NICK = "|RomAm"
 SEP_HEAD = b'/x00'
 SEP_FIELDS = b'/x01'
 CONNECT = "CONN_NICK"
@@ -47,7 +47,7 @@ class Conversation:
         self.t_receiver.join()
         self.s.close()
 
-    def connected(self):
+    def connect(self):
         connected_to_serv = False
         connect_try = 0
         connect_try_to_error = 0
@@ -128,7 +128,7 @@ class Conversation:
                     self.q_recv.put(msg_send)
             elif head[0] == SEND_NICK:
                 if len(full_pack) > 1:
-                    msg_send = Message(types[0], nick_from=head[1], message=full_pack[1].decode('utf-8'))
+                    msg_send = Message(types[0], head[1], full_pack[1].decode('utf-8'))
                     self.q_recv.put(msg_send)
             elif head[0] == DISCONNECT:
                 msg_send = Message(types[3])
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     while True:
         if not messanger.connected:
             print("Ожидание подключения...")
-            messanger.connected
+            messanger.connect()
             continue
         to = input("Введите имя: ")
         msg = input("Cообщение: ")

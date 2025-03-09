@@ -10,13 +10,18 @@ class Message:
     @staticmethod
     def basic_types():
         return Message._types_messages
-    
+
+class ChatKeys:
+    btn = "button"
+    nick = "client_nick"
+    msg_text = "messanger_text"
 
 class Base:
-    window_title = "SuperGramm"
+    window_title = "YellowGram"
     name_for_chat_all = "All"
     window_width = 1000
-    window_height = 600
+    window_height = 700
+    check_connection_pause = 5000
 
 class Connection:
     SERVER_IP = "127.0.0.1"

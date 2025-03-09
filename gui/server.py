@@ -40,7 +40,8 @@ def send_nicks_to_all(client_dict: dict) -> bool:
     return True
 
 def send_to_nick(clients_dict: dict, nick_from: str, nick_to: str, msg:bytes) -> bool:
-    msg_to = (SEND_NICK.encode("utf-8") + SEP_FIELDS + nick_from.encode("utf-8") + SEP_FIELDS + nick_to.encode("utf-8") +SEP_HEAD + msg)
+    msg_to = (SEND_NICK.encode("utf-8") + SEP_FIELDS + nick_from.encode("utf-8") + SEP_FIELDS +
+              nick_to.encode("utf-8") +SEP_HEAD + msg)
     msg_to = len(msg_to).to_bytes + msg_to
     cl = clients_dict.get(nick_to)
     if cl:
@@ -61,7 +62,9 @@ def send_disconnect(sock: socket) -> bool:
     msg_end = len(msg_end).to_bytes(2) + msg_end
     return send_message(sock, msg_end)
 
-def  client_conversations(client: socket.socket, client_addr: tuple, all_clients: dict, lock: Lock, queue: Queue) -> None:
+def  client_conversations(client: socket.socket, client_addr: tuple, all_clients: dict,
+                          lock: Lock, queue: Queue) -> None:
+
     while True:
         disconnect = False
         if not queue.empty():
