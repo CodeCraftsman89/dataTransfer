@@ -5,9 +5,9 @@ from time import sleep
 from parameters import Message
 
 
-SERVER_IP = "25.38.241.107"
+SERVER_IP = "127.0.0.1"
 SERVER_PORT = 35533
-NICK = "||ePBb|Y"
+NICK = "|fweffIOK"
 SEP_HEAD = b'/x00'
 SEP_FIELDS = b'/x01'
 CONNECT = "CONN_NICK"
@@ -22,7 +22,8 @@ CONNECT_TRY_LONG = 5
 CONNECT_TRY_LONG_SLEEP = 30
 
 class Conversation:
-    def __init__(self, server_ip: str , server_port: int, nick: str, q_send: Queue, q_recv: Queue):
+    def __init__(self, server_ip: str , server_port: int,
+                  nick: str, q_send: Queue, q_recv: Queue):
         self.server_ip = server_ip
         self.server_port = server_port
         self.nick = nick
@@ -31,7 +32,7 @@ class Conversation:
 
         self.connected = False
 
-        self.s = socket.socket(socket.AF_IRDA, socket.SOCK_STREAM)
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print(f"Соединяемся с {SERVER_IP}:{SERVER_PORT}...")
         self.t_connect = Thread(target=self.connect, daemon=True)
         self.t_sender = Thread(target=self.sender, daemon=True)
@@ -86,7 +87,6 @@ class Conversation:
             if not self.q_send.empty(): # проверка на пустую очередь
                 send_msg = self.q_send.get() # получаем данные из очереди
                 self.q_send.task_done() # устанавливаем завершение задачи
-
             else:
                 continue
 
@@ -138,13 +138,6 @@ class Conversation:
         self.connected = False
 
 
-
-
-
-    def receiver(self):
-        pass
-
-
 def send_message(sock: socket.socket, mesg: bytes) -> bool:
     try:
         sock.send(mesg)
@@ -180,29 +173,6 @@ def send_disconnect(sock: socket.socket, nic_from: str) -> bool:
     send_msg = len(send_msg).to_bytes(2) + send_msg
     return send_message(sock, send_msg)
 
-def receiver (sock: socket.socket) -> None:
-    while True:
-        try:
-            recv_msg = sock.recv(2)
-            recv_msg = sock.recv(int.from_bytes(recv_msg))
-        except ConnectionResetError:
-            print(f"Соединение {sock} разорвано")
-            break
-        full_pack = recv_msg.split(SEP_HEAD)
-        head = [field.decode("utf-8") for field in full_pack[0].split(SEP_FIELDS)]
-        if head[0] == GET_ALL:
-            if len(full_pack) > 1:
-                print(f"Получены все ники: {full_pack[1].decode('utf-8')}")
-        elif head[0] == SEND_ALL_NICKS:
-            if len(full_pack) > 1:
-                print(f"От [{head[1]}] cообщение для всех: {full_pack[1].decode('utf-8')}")
-        elif head[0] == SEND_NICK:
-            if len(full_pack) > 1:
-                print(f"От [{head[1]}] сообщение: {full_pack[1].decode('utf-8')}")
-        elif head[0] == DISCONNECT:
-            print(f"Соединение разорвано")
-            break
-
 def console_recv(queue: Queue) -> None:
     while True:
         if not queue.empty():
@@ -212,6 +182,7 @@ def console_recv(queue: Queue) -> None:
             continue
 
         types  = Message.basic_types()
+
         if recv_msg.type_msg == types[0]:
             print("Подключенные пользователи: " + recv_msg.message)
         elif recv_msg.type_msg == types[1]:
@@ -226,14 +197,30 @@ if __name__ == "__main__":
     q_send = Queue()
     q_recv = Queue()
     messanger = Conversation(SERVER_IP, SERVER_PORT, NICK, q_send, q_recv)
-    t_resiver = Thread(target=receiver, args=(q_recv,), daemon=True)
-    t_resiver.start()
+    t_receiver = Thread(target=console_recv, args=(q_recv,), daemon=True)
+    t_receiver.start()
     types = Message.basic_types()
     while not messanger.connected:
         pass
     while True:
         if not messanger.connected:
             print("Ожидание подключения...")
+            messanger.connected
             continue
         to = input("Введите имя: ")
-        msg input("Cообщение: ")
+        msg = input("Cообщение: ")
+
+        if msg.lower() == "exit" or to.lower() == "exit":
+            msg_send = Message(types[3], NICK)
+            q_send.put(msg_send)
+            break
+
+        if not to:
+            msg_send = Message(types[1], NICK, None, msg)
+            q_send.put(msg_send)
+        else:
+            msg_send = Message(types[2], to, msg)
+            q_send.put(msg_send)
+
+    t_receiver.join()
+    messanger.wait_threads()

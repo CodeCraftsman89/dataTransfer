@@ -1,0 +1,62 @@
+import tkinter as tk
+from tkinter import Tk
+from tkinter.font import Font
+from parameters import Base, Colors, FontMsgUser, FontBtnChat, FontMsgOther
+
+class MessangerGui(Tk):
+    def __init__(self):
+        super().__init__()
+        self.chats = {}
+        self.archive_chat = Base.name_for_chat_all
+
+        self.title(Base.window_title)
+        self.config(bg=Colors.bg_window_color)
+        self.geometry(f"{Base.window_width}x{Base.window_height}+"
+                      f"{(self.winfo_screenwidth() - Base.window_width) // 2}+"
+                      f"{(self.winfo_screenheight() - Base.window_height) // 2}")
+        self.resizable(False, False)
+        self.btn_chat_font = Font(family=FontBtnChat.family, size=FontBtnChat.size, weight=FontBtnChat.weight, slant=FontBtnChat.slant)
+        self.message_from_user_font = Font(family=FontMsgUser.family, size=FontMsgUser.size, slant=FontMsgUser.slant)
+        self.message_from_other_font = Font(family=FontMsgOther.family, size=FontMsgOther.size, slant=FontMsgOther.slant)
+        self.text_tag_user_msg = 'user_message'
+        self.text_tag_other_msg = 'other_message'
+        
+        self.buttons_list = tk.Text(self, width=40, height=35, bd=0, padx=1, background=Colors.button_list_color, pady=1)
+        self.buttons_list.place(x=10, y=20, anchor=tk.NW)
+
+        self.sb = tk.Scrollbar(self.buttons_list, command=self.buttons_list.yview)
+        self.sb.place(relx=1, y=0, anchor=tk.NE, relheight=1)
+        self.buttons_list.configure(state=tk.DISABLED, yscrollcommand=self.sb.set)
+
+        self.msg_send = tk.Text(self, width=60, height=2, bd=5, padx=1, bg=Colors.send_messages_bg_color)
+        self.msg_send.place(relx=0.35, rely=0.95, anchor=tk.W)
+        self.btn_send = tk.Button(self, text="Send", width=12, height=1, bg=Colors.btn_send_color)
+        self.btn_send.bind("<Button-1>", self.send_message_user)
+        self.btn_send.place(relx=0.95, rely=0.95, anchor=tk.E)
+
+        self.mainloop()
+
+    def open_chat(self, event):
+        pass
+
+    def send_message_user(self, event):
+        pass
+
+    def process_message_user(self, event):
+        pass
+
+    def add_client(self, event):
+        pass
+
+    def remove_client(self, event):
+        pass
+
+    def show_message(self, event):
+        pass
+        
+
+
+
+if  __name__ == "__main__":
+    msng_gui = MessangerGui()
+

@@ -16,7 +16,7 @@ DISCONNECT_ALL = "DISCONN_ALL"
 
 connect = {}
 
-def send_message(sock: socket, msng: bytes) -> bool:
+def send_message(sock: socket.socket, msng: bytes) -> bool:
     try:
         sock.send(msng)
     except ConnectionError:
@@ -25,7 +25,7 @@ def send_message(sock: socket, msng: bytes) -> bool:
         return False
     return True
 
-def send_nicks(sock: socket, clients: dict) -> bool:
+def send_nicks(sock: socket.socket, clients: dict) -> bool:
     nicks = "  ".join([k for k in clients])
     msg_get_all = GET_ALL.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD + nicks.encode('utf-8')
     msg_get_all = len(msg_get_all).to_bytes(2) + msg_get_all
@@ -39,6 +39,14 @@ def send_nicks_to_all(client_dict: dict) -> bool:
         client_dict[cl][2].put(msg_get_all)
     return True
 
+def send_to_nick(clients_dict: dict, nick_from: str, nick_to: str, msg:bytes) -> bool:
+    msg_to = (SEND_NICK.encode("utf-8") + SEP_FIELDS + nick_from.encode("utf-8") + SEP_FIELDS + nick_to.encode("utf-8") +SEP_HEAD + msg)
+    msg_to = len(msg_to).to_bytes + msg_to
+    cl = clients_dict.get(nick_to)
+    if cl:
+        cl[2].put(msg_to)
+    return True
+
 def send_to_all_nicks(client_dict: dict, nick: str, msg: bytes) -> bool:
     msg_all = SEND_ALL_NICKS.encode('utf-8') + SEP_FIELDS + nick.encode('utf-8') + SEP_FIELDS + SEP_HEAD + msg
     msg_all = len(msg_all).to_bytes(2) + msg_all
@@ -46,6 +54,7 @@ def send_to_all_nicks(client_dict: dict, nick: str, msg: bytes) -> bool:
         if cl == nick:
             continue
         client_dict[cl][2].put(msg_all)
+    return True
 
 def send_disconnect(sock: socket) -> bool:
     msg_end = DISCONNECT.encode('utf-8') + SEP_FIELDS + SEP_FIELDS + SEP_HEAD
@@ -67,7 +76,7 @@ def  client_conversations(client: socket.socket, client_addr: tuple, all_clients
             continue
         except ConnectionResetError:
             with lock:
-                for key, val in all_clients.keys():
+                for key, val in all_clients.items():
                     if val[0] == client:
                         pop = key
                 all_clients.pop(pop)
@@ -104,6 +113,7 @@ def  client_conversations(client: socket.socket, client_addr: tuple, all_clients
             client.close()
             with lock:
                 all_clients.pop(head[1])
+            send_nicks_to_all(all_clients)
             break
 
 if __name__ == "__main__":
@@ -116,7 +126,7 @@ if __name__ == "__main__":
         s.listen()
 
         sock_cli, addr_cli = s.accept()
-        print(f"Получено подключение {addr_cli}")
+        print(f"Получено подключение {(sock_cli, addr_cli)}")
         sock_cli.settimeout(1)
 
         q = Queue()
