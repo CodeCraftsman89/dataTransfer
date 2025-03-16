@@ -23,12 +23,15 @@ CONNECT_TRY_LONG_SLEEP = 30
 
 class Conversation:
     def __init__(self, server_ip: str , server_port: int,
-                  nick: str, q_send: Queue, q_recv: Queue):
+                  nick: str, q_send: Queue, q_recv: Queue, gui=None, event=None):
         self.server_ip = server_ip
         self.server_port = server_port
         self.nick = nick
         self.q_send = q_send
         self.q_recv = q_recv
+
+        self.gui = gui
+        self.event = event
 
         self.connected = False
 
@@ -84,11 +87,8 @@ class Conversation:
 
     def sender(self):
         while True:
-            if not self.q_send.empty(): # проверка на пустую очередь
-                send_msg = self.q_send.get() # получаем данные из очереди
-                self.q_send.task_done() # устанавливаем завершение задачи
-            else:
-                continue
+            seng_msg = self.q_send.get()
+            self.q_send.task_done()
 
             types = Message.basic_types()
 
@@ -122,10 +122,14 @@ class Conversation:
                 if len(full_pack) > 1:
                     msg_send = Message(types[0], message=full_pack[1].decode('utf-8'))
                     self.q_recv.put(msg_send)
+                    if not self.gui is None:
+                        self.gui.event_generate(self.event)
             elif head[0] == SEND_ALL_NICKS:
                 if len(full_pack) > 1:
                     msg_send = Message(types[0], nick_from=head[1], message=full_pack[1].decode('utf-8'))
                     self.q_recv.put(msg_send)
+                    if not self.gui is None:
+                        self.gui.event_generate(self.event)
             elif head[0] == SEND_NICK:
                 if len(full_pack) > 1:
                     msg_send = Message(types[0], head[1], full_pack[1].decode('utf-8'))

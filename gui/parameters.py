@@ -22,6 +22,7 @@ class Base:
     window_width = 1000
     window_height = 700
     check_connection_pause = 5000
+    receiver_event = "<<receive>>"
 
 class Connection:
     SERVER_IP = "127.0.0.1"
