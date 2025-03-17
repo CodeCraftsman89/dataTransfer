@@ -57,6 +57,8 @@ class MessangerGui(Tk):
         self.q_send = Queue()
         self.q_recv = Queue()
 
+#        self.bind(Base.receiver_event, process_message)
+
         self.messanger = Conversation(Connection.SERVER_IP, Connection.SERVER_PORT, Connection.NICK,
                                       self.q_send, self.q_recv, self, Base.receiver_event)
 
@@ -65,8 +67,9 @@ class MessangerGui(Tk):
         cs_lb = tk.Label(self, textvariable=self.connection_state, bg=Colors.bg_window_color)
         cs_lb.place(x=2, y=2)
         self.connection_state.set('connection to server...')
+        self.after(Base.check_connection_pause, self.check_connection)
 
-
+        self.mainloop()
 
     def open_chat(self, event):
         pass
@@ -91,9 +94,9 @@ class MessangerGui(Tk):
             self.connection_state.set('Connected')
         else:
             self.connection_state.set('connection to server...')
-        self.after(Base.check_connection_pause, self.check_connection)
 
-        self.mainloop()
+
+
 
 
 if  __name__ == "__main__":

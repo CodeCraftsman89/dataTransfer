@@ -134,9 +134,13 @@ class Conversation:
                 if len(full_pack) > 1:
                     msg_send = Message(types[0], head[1], full_pack[1].decode('utf-8'))
                     self.q_recv.put(msg_send)
+                    if not self.gui is None:
+                        self.gui.event_generate(self.event)
             elif head[0] == DISCONNECT:
                 msg_send = Message(types[3])
                 self.q_send.put(msg_send)
+                if not self.gui is None:
+                    self.gui.event_generate(self.event)
                 break
 
         self.connected = False
