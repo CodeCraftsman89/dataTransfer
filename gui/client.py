@@ -117,7 +117,7 @@ class Conversation:
             head = [field.decode('utf-8') for field in full_pack[0].split(SEP_FIELDS)]
 
             types = Message.basic_types()
-
+ 
             if head[0] == GET_ALL:
                 if len(full_pack) > 1:
                     msg_send = Message(types[0], message=full_pack[1].decode('utf-8'))

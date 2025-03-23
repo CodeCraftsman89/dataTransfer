@@ -55,6 +55,7 @@ class MessangerGui(Tk):
 
         self.q_send = Queue()
         self.q_recv = Queue()
+        self.bind(Base.receiver_event, self.process_message)
 
         self.messanger = Conversation(Connection.SERVER_IP, Connection.SERVER_PORT, Connection.NICK,
                                       self.q_send, self.q_recv, self, Base.receiver_event)
@@ -74,8 +75,28 @@ class MessangerGui(Tk):
     def send_message_user(self, event):
         pass
 
-    def process_message_user(self, event):
-        pass
+    def process_message(self, event):
+        print('События')
+        while not self.q_recv.empty():
+            print('Сообщение')
+            recv_msg = self.q_recv.get()
+            self.q_recv.task_done()
+            print(f'Получено сообщение: [{recv_msg.type_msg}], [{recv_msg.nick_from}], [{recv_msg.nick_to}], [{recv_msg.message}]')
+            
+            print('Конец')
+
+            types = Conversation.basic_types()
+
+            if recv_msg.type_msg == types[0]:
+                print("Подключенные пользователи: " + recv_msg.message)
+            elif recv_msg.type_msg == types[1]:
+                print(f"От [{recv_msg.nick_from}] сообщение для всех: {recv_msg.message}")
+                self.show_message(recv_msg.nick_from, recv_msg.message, True)
+            elif recv_msg.type_msg == types[2]:
+                print(f"От [{recv_msg.nick_from}] сообщение: {recv_msg.message}")
+            elif recv_msg.type_msg == types[3]:
+                print("Соединение разорвано")
+                break
 
     def add_client(self, event):
         pass
@@ -83,8 +104,13 @@ class MessangerGui(Tk):
     def remove_client(self, event):
         pass
 
-    def show_message(self, event):
-        pass
+    def show_message(self, event, nick: str, message: str, for_all: bool = False):
+        if for_all:
+            chat = self.chats[Base.name_for_chat_all]
+            text = chat
+            text.configure(state=tk.NORMAL)
+            text.insert(tk.INSERT, f"{nick}: {message}\n", self.text_tag_other_msg)
+            text.configure(state=tk.DISABLED)
 
     def check_connection(self):
         if self.messanger.connected:
