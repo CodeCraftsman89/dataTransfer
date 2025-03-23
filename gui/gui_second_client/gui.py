@@ -3,7 +3,7 @@ from queue import Queue
 from tkinter import Tk
 from tkinter.font import Font
 
-from parameters import Base, Colors, FontMsgUser, FontBtnChat, FontMsgOther, ChatKeys, Connection, Message
+from parameters import Base, Colors, FontMsgUser, FontBtnChat, FontMsgOther, ChatKeys, Connection
 from client import Conversation
 
 class MessangerGui(Tk):
@@ -73,18 +73,7 @@ class MessangerGui(Tk):
         pass
 
     def send_message_user(self, event):
-        msg = self.msg_send.get("1.0", tk.END)
-        types = Message.basic_types()
-        msg_send = Message(types[2], Connection.NICK, self.archive_chat, msg)
-        self.q_send.put(msg_send)
-        self.msg_send.delete("1.0", tk.END)
-
-        chat = self.chats[self.archive_chat]
-        text = chat[ChatKeys.msg_text]
-        text.configure(state=tk.NORMAL)
-
-        text.insert(tk.INSERT, f"{msg}\n", self.text_tag_user_msg)
-        text.configure(state=tk.DISABLED)
+        pass
 
     def process_message(self, event):
         print('События')
@@ -96,7 +85,7 @@ class MessangerGui(Tk):
             
             print('Конец')
 
-            types = Message.basic_types()
+            types = Conversation.basic_types()
 
             if recv_msg.type_msg == types[0]:
                 print("Подключенные пользователи: " + recv_msg.message)
@@ -105,6 +94,7 @@ class MessangerGui(Tk):
                 self.show_message(recv_msg.nick_from, recv_msg.message, True)
             elif recv_msg.type_msg == types[2]:
                 print(f"От [{recv_msg.nick_from}] сообщение: {recv_msg.message}")
+                self.show_message(recv_msg.nick_from, recv_msg.message, False)
             elif recv_msg.type_msg == types[3]:
                 print("Соединение разорвано")
                 break
@@ -115,13 +105,15 @@ class MessangerGui(Tk):
     def remove_client(self, event):
         pass
 
-    def show_message(self, nick: str, message: str, for_all: bool):
+    def show_message(self, nick: str, message: str, for_all: bool = False):
         if for_all:
             chat = self.chats[Base.name_for_chat_all]
-            text = chat
-            text.configure(state=tk.NORMAL)
-            text.insert(tk.INSERT, f"{nick}: {message}\n", self.text_tag_other_msg)
-            text.configure(state=tk.DISABLED)
+        else:
+            chat = self.chats.get(nick, self.chats[Base.name_for_chat_all])
+        
+        chat.configure(state=tk.NORMAL)
+        chat.insert(tk.END, f"{nick}: {message}\n", self.text_tag_other_msg)
+        chat.configure(state=tk.DISABLED)
 
     def check_connection(self):
         if self.messanger.connected:
