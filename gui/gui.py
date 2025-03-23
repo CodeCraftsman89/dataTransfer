@@ -1,6 +1,5 @@
 import tkinter as tk
 from queue import Queue
-from queue import Queue
 from tkinter import Tk
 from tkinter.font import Font
 
@@ -57,8 +56,6 @@ class MessangerGui(Tk):
         self.q_send = Queue()
         self.q_recv = Queue()
 
-#        self.bind(Base.receiver_event, process_message)
-
         self.messanger = Conversation(Connection.SERVER_IP, Connection.SERVER_PORT, Connection.NICK,
                                       self.q_send, self.q_recv, self, Base.receiver_event)
 
@@ -95,10 +92,5 @@ class MessangerGui(Tk):
         else:
             self.connection_state.set('connection to server...')
 
-
-
-
-
-if  __name__ == "__main__":
+if __name__ == "__main__":
     msng_gui = MessangerGui()
-
