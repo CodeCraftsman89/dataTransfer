@@ -12,7 +12,7 @@ class MessangerGui(Tk):
         self.chats = {}
         self.archive_chat = Base.name_for_chat_all
 
-        self.title(Base.window_title)
+        self.title(f"{Base.window_title} [{Connection.NICK}]")
         self.config(bg=Colors.bg_window_color)
         self.geometry(f"{Base.window_width}x{Base.window_height}+"
                       f"{(self.winfo_screenwidth() - Base.window_width) // 2}+"
