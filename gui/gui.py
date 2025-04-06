@@ -70,12 +70,23 @@ class MessangerGui(Tk):
         self.mainloop()
 
     def open_chat(self, event):
-        pass
+        active_text_dict = self.chats.get(self.archive_chat)
+        active_text = active_text_dict.get(ChatKeys.msg_text)
+        active_text.place_forget()
+        chat = self.chats.get(id(event.widget))
+        new_text = chat.get(ChatKeys.msg_text)
+        new_text.place(relx=0.35, y=20, anchor=tk.NW)
+        self.active_chat = chat.get(ChatKeys.nick)
 
     def send_message_user(self, event):
+        if not self.messanger.connected:
+            return
         msg = self.msg_send.get("1.0", tk.END)
         types = Message.basic_types()
-        msg_send = Message(types[2], Connection.NICK, self.archive_chat, msg)
+        if self.active_chat == Base.name_for_chat_all:
+            msg_send = Message(types[1], Connection.NICK, None, msg)
+        else:
+            msg_send = Message(types[2], Connection.NICK, self.active_chat, msg)
         self.q_send.put(msg_send)
         self.msg_send.delete("1.0", tk.END)
 
@@ -100,6 +111,7 @@ class MessangerGui(Tk):
 
             if recv_msg.type_msg == types[0]:
                 print("Подключенные пользователи: " + recv_msg.message)
+                self.check_clients(recv_msg.message.split())
             elif recv_msg.type_msg == types[1]:
                 print(f"От [{recv_msg.nick_from}] сообщение для всех: {recv_msg.message}")
                 self.show_message(recv_msg.nick_from, recv_msg.message, True)
@@ -109,8 +121,20 @@ class MessangerGui(Tk):
                 print("Соединение разорвано")
                 break
 
-    def add_client(self, event):
-        pass
+    def add_client(self, nick: str):
+        chat = tk.Text(self, width=75, height=30, bd=5, padx=5, pady=5, state=tk.DISABLED, bg=Colors.chat_messanger_bg_color)
+        chat.tag_configure(self.text_tag_user_msg, foreground=Colors.message_from_user_text_color,
+                           font=self.message_from_user_font, justify='right')
+        chat.tag_configure(self.text_tag_other_msg, foreground=Colors.message_from_other_text_color,
+                           font=self.message_from_other_font, justify='left')
+        btn = tk.Button(self, text=nick, width=17, height=1, bg=Colors.btn_chat_color, borderwidth=0,
+                        fg=Colors.btn_chat_text_color, font=self.btn_chat_font)
+        btn.bind("<Button-1>", self.open_chat)
+        self.buttons_list.window_create(tk.END, window=btn)
+
+        chat_dict = {ChatKeys.btn: btn, ChatKeys.msg_text: chat, ChatKeys.nick: nick}
+        self.chats[id(btn)] = chat_dict
+        self.chats[nick] = chat_dict
 
     def remove_client(self, event):
         pass
@@ -129,5 +153,11 @@ class MessangerGui(Tk):
         else:
             self.connection_state.set('connection to server...')
 
+    def check_clients(self):
+        for nick in not self.messanger.clients:
+            if nick == Connection.NICK:
+                continue
+            if nick not in self.chats.keys:
+                self.add_client(nick)
 if __name__ == "__main__":
     msng_gui = MessangerGui()
