@@ -15,6 +15,7 @@ class ChatKeys:
     btn = "button"
     nick = "client_nick"
     msg_text = "messanger_text"
+    online = "online"
 
 class Base:
     window_title = "YellowGram"
@@ -47,12 +48,18 @@ class Colors:
     button_list_color = bg_window_color
     btn_chat_color = bg_window_color
     btn_chat_text_color = 'DarkOrange'
+    btn_chat_text_color_active = "DarkOrange4"
+    btn_chat_text_color_offline = "DarkGrey"
 
     message_from_user_bg_color = 'light goldenrod'
     message_from_user_text_color = 'tomato'
 
     message_from_other_bg_color = 'sienna4'
     message_from_other_text_color = 'firebrick4'
+
+    chat_messanger_bg_color_offline = 'DarkGrey'
+
+    bu
 
 class FontBtnChat:
     family = "TimesNewRoman"

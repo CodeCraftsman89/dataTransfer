@@ -45,11 +45,11 @@ class MessangerGui(Tk):
         chat.tag_configure(self.text_tag_other_msg, foreground=Colors.message_from_other_text_color,
                            font=self.message_from_other_font, justify='left')
 
-        btn = tk.Button(self, text=Base.name_for_chat_all, width=35, height=1, bg=Colors.btn_chat_color, borderwidth=0)
+        btn = tk.Button(self, text=Base.name_for_chat_all, width=35, height=1, bg=Colors.btn_chat_color, borderwidth=0, fg=Colors.btn_chat_text_color_active, font=self.btn_chat_font)
         btn.bind("<Button-1>", self.open_chat)
         self.buttons_list.window_create(tk.END, window=btn)
 
-        chat_dict = {ChatKeys.btn: btn, ChatKeys.msg_text: chat, ChatKeys.nick: Base.name_for_chat_all}
+        chat_dict = {ChatKeys.btn: btn, ChatKeys.msg_text: chat, ChatKeys.nick: Base.name_for_chat_all, ChatKeys.online:True}
         self.chats[id(btn)] = chat_dict
         self.chats[Base.name_for_chat_all] = chat
 
@@ -77,9 +77,15 @@ class MessangerGui(Tk):
         new_text = chat.get(ChatKeys.msg_text)
         new_text.place(relx=0.35, y=20, anchor=tk.NW)
         self.active_chat = chat.get(ChatKeys.nick)
+        for val in self.chats.values():
+            val[ChatKeys.btn].configure(fg=Colors.btn_chat_text_color)
+        event,widget.configure(fg=Colors.btn_chat_text_color_active)
 
     def send_message_user(self, event):
         if not self.messanger.connected:
+            return
+        chat = self.chats[self.active_chat]
+        if not chat[ChatKeys.online]:
             return
         msg = self.msg_send.get("1.0", tk.END)
         types = Message.basic_types()
@@ -117,6 +123,7 @@ class MessangerGui(Tk):
                 self.show_message(recv_msg.nick_from, recv_msg.message, True)
             elif recv_msg.type_msg == types[2]:
                 print(f"От [{recv_msg.nick_from}] сообщение: {recv_msg.message}")
+                self.show_message(recv_msg.nick_from, recv_msg.message)
             elif recv_msg.type_msg == types[3]:
                 print("Соединение разорвано")
                 break
@@ -132,20 +139,30 @@ class MessangerGui(Tk):
         btn.bind("<Button-1>", self.open_chat)
         self.buttons_list.window_create(tk.END, window=btn)
 
-        chat_dict = {ChatKeys.btn: btn, ChatKeys.msg_text: chat, ChatKeys.nick: nick}
+        chat_dict = {ChatKeys.btn: btn, ChatKeys.msg_text: chat, ChatKeys.nick: nick, ChatKeys.online:True}
         self.chats[id(btn)] = chat_dict
         self.chats[nick] = chat_dict
 
     def remove_client(self, event):
-        pass
+        chat = self.chats.get(nick)
+        chat[ChatKeys.online] = False
+        chat[ChatKeys.msg_text].configure(bg=Colors.chat_messanger_bg_color_offline)
+        chat[ChatKeys.msg_text].configure(bg=Colors.chat_messanger_bg_color_offline)
 
-    def show_message(self, nick: str, message: str, for_all: bool):
+    def show_message(self, nick: str, msg: str, for_all: bool):
         if for_all:
             chat = self.chats[Base.name_for_chat_all]
-            text = chat
-            text.configure(state=tk.NORMAL)
-            text.insert(tk.INSERT, f"{nick}: {message}\n", self.text_tag_other_msg)
-            text.configure(state=tk.DISABLED)
+        else:
+            chat = self.chats.get(nick)
+            if chat is None:
+                return
+        text = chat[ChatKeys.msg_text]
+        text.configure(state=tk.NORMAL)
+        if for_all:
+            text.insert(tk.INSERT, f"{nick}: {msg}\n", self.text_tag_other_msg)
+        else:
+            text.insert(tk.INSERT, f"{msg}\n", self.text_tag_other_msg)
+        text.configure(state=tk.DISABLED)
 
     def check_connection(self):
         if self.messanger.connected:
@@ -153,11 +170,23 @@ class MessangerGui(Tk):
         else:
             self.connection_state.set('connection to server...')
 
-    def check_clients(self):
-        for nick in not self.messanger.clients:
+    def check_clients(self, nicks: list):
+        for nick in nicks:
             if nick == Connection.NICK:
                 continue
             if nick not in self.chats.keys:
                 self.add_client(nick)
+            else:
+                chat = self.chats.get(nick)
+                if not chat[ChatKeys.online]:
+                    chat[ChatKeys.online] = True
+                    chat[ChatKeys.msg_text].configure(bg=Colors.chat_messanger_bg_color)
+                    chat[ChatKeys.btn].configure(fg=Colors.btn_chat_text_color)
+
+        for nick in self.chats.keys:
+            if nick == Base.name_for_chat_all or not isinstance(nick, str):
+                continue
+        if nick not in nicks:
+            self.remove_client(nick)
 if __name__ == "__main__":
     msng_gui = MessangerGui()
